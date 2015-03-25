@@ -32,6 +32,7 @@ using System.Text;
 using System.Reflection;
 using System.Windows.Forms;
 using System.IO;
+using System.Diagnostics;
 using Microsoft.Win32;
 using System.Security.Cryptography;
 
@@ -39,6 +40,12 @@ namespace CCAPI_NCAPI
 {
     public class CCAPI
     {
+        [DllImport("user32.dll")]
+        internal static extern IntPtr SetForegroundWindow(IntPtr hWnd);
+
+        [DllImport("user32.dll")]
+        internal static extern bool ShowWindow(IntPtr hWnd, int nCmdShow);
+
         [DllImport("kernel32.dll")]
         static extern IntPtr LoadLibrary(string dllName);
 
@@ -103,6 +110,7 @@ namespace CCAPI_NCAPI
 
         private IntPtr libModule = IntPtr.Zero;
         private readonly string CCAPIHASH = "C2FE9E1C387CF29AAC781482C28ECF86";
+        private string programPath = "";
 
         public CCAPI()
         {
@@ -113,6 +121,7 @@ namespace CCAPI_NCAPI
             if (Key != null)
             {
                 string Path = Key.GetValue("path") as String;
+                programPath = Path;
                 if (!string.IsNullOrEmpty(Path))
                 {
                     string DllUrl = Path + @"\CCAPI.dll";
@@ -292,6 +301,39 @@ namespace CCAPI_NCAPI
             Info.ConsoleType = consoleType;
             Info.TempCell = tempCELL;
             Info.TempRSX = tempRSX;
+        }
+
+        public bool OpenManager()
+        {
+            if (programPath == null || programPath == "")
+                return false;
+
+            string[] files = Directory.GetFiles(programPath, "*.exe", SearchOption.AllDirectories);
+            for (int x = 0; x < files.Length; x++)
+            {
+                if (files[x].IndexOf("Manager") > 0)
+                {
+                    //Check if process already open
+                    Process[] res = Process.GetProcessesByName(Path.GetFileNameWithoutExtension(files[x]));
+                    if (res.Length > 0) //Open existing process
+                    {
+                        IntPtr hWnd = res[0].MainWindowHandle;
+                        if (hWnd != IntPtr.Zero)
+                        {
+                            SetForegroundWindow(hWnd);
+                            ShowWindow(hWnd, 1);
+                        }
+                    }
+                    else //Open new instance
+                    {
+                        Process.Start(files[x]);
+                    }
+
+                    return true;
+                }
+            }
+
+            return false;
         }
 
         /// <summary>Return true if a ccapi function return a good integer.</summary>

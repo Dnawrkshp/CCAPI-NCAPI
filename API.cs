@@ -206,6 +206,19 @@ namespace CCAPI_NCAPI
         }
 
         /// <summary>
+        /// Called by user.
+        /// Should display options for the API.
+        /// Can be used for other things.
+        /// </summary>
+        public void Configure()
+        {
+            if (_ccapi == null)
+                _ccapi = new CCAPI();
+
+            _ccapi.OpenManager();
+        }
+
+        /// <summary>
         /// Called on initialization
         /// </summary>
         public void Initialize()
